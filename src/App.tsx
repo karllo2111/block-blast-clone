@@ -73,6 +73,10 @@ const App: React.FC = () => {
                 }
             }
         }
+        const lose = new Audio('/gameover.mp3');
+        lose.volume = 1;
+        lose.play().catch(() => {});
+        return true;
     })();
 
     useGSAP(() => {
@@ -242,12 +246,12 @@ const App: React.FC = () => {
             <h2 className="text-2xl font-bold mb-8 text-slate-300">Score: <span className="text-white">{score}</span></h2>
 
             {isGameOver && (
-                <div className="absolute top-1/3 flex flex-col items-center bg-black/80 backdrop-blur-md p-8 rounded-2xl border border-red-500/50 shadow-2xl shadow-red-500/20 z-50 animate-bounce">
+                <div className="absolute top-1/3 flex flex-col items-center bg-black/80 backdrop-blur-md p-10 rounded-2xl border border-red-500/50 shadow-2xl shadow-red-500/20 z-50 animate-bounce">
                     <h3 className="text-3xl font-bold text-red-500 mb-2">GAME OVER!</h3>
                     <p className="text-slate-300 mb-6">Papan penuh,mentok bos</p>
                     <button
                         onClick={restartGame}
-                        className="px-6y py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold rounded-xl shadow-lg transform active:scale-95 transition-all"
+                        className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold rounded-xl shadow-lg transform active:scale-95 transition-all"
                     >
                         Main Lagi
                     </button>
