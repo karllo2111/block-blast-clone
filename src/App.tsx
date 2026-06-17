@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-// import { start } from 'repl';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
+import confetti from 'canvas-confetti';
+
+type ScorePopup = {
+    id: number;
+    text: string;
+    x: number;
+    y: number;
+}
 
 const BOARD_SIZE = 8;
 type Cell = 0 | 1;
@@ -49,6 +58,7 @@ const App: React.FC = () => {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
     const [hoverPos, setHoverPos] = useState<{ r: number; c: number } | null>(null);
     const [score, setScore] = useState<number>(0);
+    const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
 
     //derved state
     const isGameOver = (() => {
@@ -65,6 +75,26 @@ const App: React.FC = () => {
         }
     })();
 
+    useGSAP(() => {
+        if (scorePopups.length > 0) {
+            const target = scorePopups[scorePopups.length - 1];
+
+            gsap.fromTo(`.popup-${target.id}`,
+                { opacity: 1, y: target.y, scale: 0.8 },
+                {
+                    opacity: 0,
+                    y: target.y - 60,//terbang ke atas sebanyak 60px
+                    scale:1.3,
+                    duration: 0.8,
+                    ease: "power2.out",
+                    onComplete: () => {
+                        setScorePopups((prev) => prev.filter((p) => p.id !== target.id));
+                    }
+                }
+            );
+        }
+    }, [scorePopups])
+
     //jika game over dan ada blok yang sedang dipilih, bersihkan pilihan secara otomatis
     if (isGameOver && selectedIndex !== null) {
         setSelectedIndex(null);
@@ -76,6 +106,10 @@ const App: React.FC = () => {
         if (!shape) return;
 
         if (!canPlaceShape(board, shape, startR, startC)) return;
+
+        const placeAudio = new Audio('/pop.mp3')
+        placeAudio.volume = 0.5;
+        placeAudio.play().catch(() => {});
 
         //pakai const buat mutasi isinya via index,bukan menimpa variable
         const newBoard = board.map((row) => [...row]);
@@ -105,6 +139,34 @@ const App: React.FC = () => {
         }
 
         if (rowsToClear.size > 0 || colsToClear.size > 0) {
+            const audio = new Audio('/break.mp3');
+            audio.volume = 0.6;
+            audio.play().catch(() => {});
+            placeAudio.volume = 0;
+
+            //perkiraan posiis berdasarkan baris dan kolom yang di klik
+            const calculatedX = startC * 50 + 40;
+            const calculatedY = startR * 50 + 100;
+
+            const totalPoin = (rowsToClear.size + colsToClear.size) * 100;
+
+            setScorePopups((prev) => [
+                ...prev,
+                { id: Date.now(), text: `+${totalPoin}`, x: calculatedX, y: calculatedY }
+            ]);
+
+            if (rowsToClear.size + colsToClear.size >= 2 ) {
+                audio.volume= 0;
+                const combo = new Audio('/combo.mp3')
+                combo.volume = 0.5;
+                combo.play().catch(() => {});
+                confetti({
+                    particleCount: 80,
+                    spread: 60,
+                    origin: {y: 0.6}
+                })
+            }
+            
             rowsToClear.forEach((r) => {
                 for (let c = 0; c < BOARD_SIZE; c++) newBoard[r][c] = 0;
             });
@@ -167,6 +229,16 @@ const App: React.FC = () => {
             {/* <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2 drop-shadow-md">
                 BLOCK BLAST
             </h1> */}
+            {scorePopups.map((popup) => (
+                <div
+                key={popup.id}
+                className={`popup-${popup.id} absolute font-black text-2xl text-yellow-400 drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] pointer-events-none z-40`}
+                style={{ left: `${popup.x}px`}}
+                >
+                    {popup.text}
+                </div>
+            ))}
+            
             <h2 className="text-2xl font-bold mb-8 text-slate-300">Score: <span className="text-white">{score}</span></h2>
 
             {isGameOver && (
